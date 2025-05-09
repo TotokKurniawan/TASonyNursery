@@ -19,6 +19,7 @@ class AdminController extends Controller
         for ($month = 1; $month <= 12; $month++) {
             $total = pesanan::whereMonth('created_at', $month)
                 ->whereYear('created_at', Carbon::now()->year)
+                ->where('status', 'completed')
                 ->sum('budget');
 
             // Masukkan total pendapatan per bulan ke dalam array

@@ -37,10 +37,10 @@ class PesananUserController2 extends Controller
         $validated = $request->validate([
             'design_id' => 'required|exists:desains,id',
             'spesifikasi_lahan' => 'required|string|max:255',
-            'tanggal_pengerjaan' => 'required|date',
-            'waktu_pengerjaan' => 'required|string|max:255',
+            'tanggal_survei' => 'required|date',
+            'tanggal_selesai' => 'required|date',
             'status_pembayaran' => 'required|in:dp,belum lunas',
-            'nominal_dp' => 'nullable|numeric|min:0', // Validasi untuk nominal DP (jika ada)
+            'nominal_dp' => 'nullable|numeric|min:0',
             'request_bunga' => 'required|string|max:1000',
             'keterangan_tambahan' => 'nullable|string|max:1000',
             'foto_lokasi' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
@@ -53,13 +53,15 @@ class PesananUserController2 extends Controller
         // Simpan foto lokasi
         $fotoLokasiPath = $request->file('foto_lokasi')->store('uploads/foto_lokasi', 'public');
 
+
+
         // Simpan data pesanan
         $pesanan = new Pesanan();
         $pesanan->id_desain = $request->design_id;
         $pesanan->id_pelanggan = $id_pelanggan;
         $pesanan->spesifikasi_lahan = $request->spesifikasi_lahan;
-        $pesanan->tanggal_pengerjaan = $request->tanggal_pengerjaan;
-        $pesanan->waktu_pengerjaan = $request->waktu_pengerjaan;
+        $pesanan->tanggal_survei = $request->tanggal_survei;
+        $pesanan->tanggal_selesai = $request->tanggal_selesai;
         $pesanan->status_pembayaran = $request->status_pembayaran;
         $pesanan->nominal_dp = $request->status_pembayaran === 'dp' ? $request->nominal_dp : 0;
         $pesanan->request_bunga = $request->request_bunga;
@@ -67,6 +69,7 @@ class PesananUserController2 extends Controller
         $pesanan->foto_lokasi = $fotoLokasiPath;
         $pesanan->budget = $budget;
         $pesanan->status = 'pending';
+        $pesanan->bukti_dp = 'NULL';
         $pesanan->save();
 
         return redirect()->route('pesananUser', ['id_pelanggan' => $id_pelanggan])

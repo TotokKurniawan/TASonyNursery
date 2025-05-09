@@ -3,7 +3,6 @@
     @php
         $adaNegosiasi = $pesanans->contains('status', 'negosiasi');
     @endphp
-
     <main id="main">
         <!-- ======= Features Section ======= -->
         <section class="hero-section inner-page">
@@ -48,7 +47,11 @@
                         <select id="statusFilter" class="form-select w-auto" onchange="filterTable()">
                             <option value="all">Semua Status</option>
                             <option value="pending">Pending</option>
-                            <option value="in progress">Proses</option>
+                            <optgroup label="In Progress">
+                                <option value="in progress (bayar dp)">In Progress (Bayar DP)</option>
+                                <option value="in progress (pembuatan taman)">In Progress (Pembuatan Taman)</option>
+                                <option value="in progress (penyelesaian akhir)">In Progress (Penyelesaian Akhir)</option>
+                            </optgroup>
                             <option value="completed">Selesai</option>
                             <option value="canceled">Dibatalkan</option>
                         </select>
@@ -59,19 +62,17 @@
                         <table class="table table-striped table-hover align-items-center mb-0">
                             <thead>
                                 <tr>
-                                    <th>Nama</th>
-                                    <th>Budget</th>
+                                    <th class="text-center">Nama</th>
+                                    <th class="text-center">Budget / sisa bayar</th>
                                     <th class="text-center">Bunga</th>
                                     <th class="text-center">Status</th>
                                     <th class="text-center">Alamat</th>
                                     <th class="text-center">Metode Pembayaran</th>
                                     <th class="text-center">status Pembayaran</th>
                                     <th class="text-center">Nominal DP</th>
-
                                     @if ($adaNegosiasi)
                                         <th class="text-center">Negosiasi</th>
                                     @endif
-
                                     <th class="text-center">Foto Lokasi</th>
                                     <th class="text-center">Foto Desain</th>
                                     <th class="text-center">Action</th>
@@ -114,7 +115,8 @@
                                         <td class="align-middle text-center">{{ $pesanan->pelanggan->alamat }}</td>
                                         <td class="align-middle text-center">{{ $pesanan->metode_pembayaran }}</td>
                                         <td class="align-middle text-center">{{ $pesanan->status_pembayaran }}</td>
-                                        <td class="align-middle text-center">{{ $pesanan->nominal_dp }}</td>
+                                        <td class="align-middle text-center">
+                                            {{ 'Rp ' . number_format($pesanan->nominal_dp, 0, ',', '.') }}</td>
                                         @if ($adaNegosiasi)
                                             <td class="align-middle text-center">
                                                 @if ($pesanan->status == 'negosiasi')
@@ -153,17 +155,16 @@
                                         </td>
 
                                         <td class="align-middle text-center">
-                                            @if ($pesanan->status == 'canceled' || $pesanan->status == 'completed')
+
+                                            @if ($pesanan->status == 'canceled')
+                                                <span class="text-danger">{{ $pesanan->keterangan_tolak }} </span>
+                                            @elseif ($pesanan->status == 'completed')
                                                 <span class="text-success">Pesanan Selesai</span>
-                                            @elseif ($pesanan->status == 'in progress')
+                                            @elseif ($pesanan->status == 'in progress (pembuatan taman)')
                                                 @if ($pesanan->metode_pembayaran == 'bank_transfer')
                                                     <button class="btn btn-sm btn-warning mt-2 initiate-payment"
                                                         data-id="{{ $pesanan->id }}">
-                                                        <i class="fas fa-credit-card"></i> Lanjutkan Pembayaran
-                                                    </button>
-                                                    <button class="btn btn-sm btn-info mt-2" data-bs-toggle="modal"
-                                                        data-bs-target="#detailPesananModal{{ $pesanan->id }}">
-                                                        <i class="fas fa-info-circle"></i> Detail
+                                                        <i class="fas fa-credit-card"></i> Pelunasan
                                                     </button>
                                                 @elseif ($pesanan->metode_pembayaran == 'cash')
                                                 @else
@@ -171,15 +172,15 @@
                                                         data-bs-target="#metodePembayaranModal{{ $pesanan->id }}">
                                                         <i class="fas fa-credit-card"></i> Pilih Metode Pembayaran
                                                     </button>
-                                                    <button class="btn btn-sm btn-info mt-2" data-bs-toggle="modal"
-                                                        data-bs-target="#detailPesananModal{{ $pesanan->id }}">
-                                                        <i class="fas fa-info-circle"></i> Detail
-                                                    </button>
                                                 @endif
+                                                <button class="btn btn-sm btn-info mt-2" data-bs-toggle="modal"
+                                                    data-bs-target="#detailPesananModal{{ $pesanan->id }}">
+                                                    <i class="fas fa-info-circle"></i> Detail
+                                                </button>
                                             @elseif ($pesanan->status == 'negosiasi')
                                                 {{-- Tombol Bayar DP jika status pembayaran adalah DP --}}
                                                 @if ($pesanan->status_pembayaran == 'dp')
-                                                    <form action="{{ route('terimaadmin', $pesanan->id) }}"
+                                                    <form action="{{ route('terimalunas', $pesanan->id) }}"
                                                         method="POST" style="display: inline;">
                                                         @csrf
                                                         @method('PATCH')
@@ -189,7 +190,7 @@
                                                     </form>
                                                 @elseif ($pesanan->status_pembayaran == 'belum lunas')
                                                     {{-- Tombol Terima jika status pembayaran belum lunas --}}
-                                                    <form action="{{ route('terimaadmin', $pesanan->id) }}"
+                                                    <form action="{{ route('terimalunas', $pesanan->id) }}"
                                                         method="POST" style="display: inline;">
                                                         @csrf
                                                         @method('PATCH')
@@ -198,7 +199,14 @@
                                                         </button>
                                                     </form>
                                                 @endif
-
+                                                <button class="btn btn-sm btn-warning mt-2" data-bs-toggle="modal"
+                                                    data-bs-target="#negosiasiModal{{ $pesanan->id }}">
+                                                    <i class="fas fa-info-circle"></i> Negosiasi
+                                                </button>
+                                                <button class="btn btn-sm btn-info mt-2" data-bs-toggle="modal"
+                                                    data-bs-target="#detailPesananModal{{ $pesanan->id }}">
+                                                    <i class="fas fa-info-circle"></i> Detail
+                                                </button>
                                                 <form action="{{ route('pesanan.tolak', $pesanan->id) }}" method="POST"
                                                     style="display: inline;">
                                                     @csrf
@@ -207,12 +215,30 @@
                                                         <i class="fas fa-trash-alt"></i> Tolak
                                                     </button>
                                                 </form>
+                                            @elseif ($pesanan->status == 'in progress (bayar dp)')
+                                                {{-- Tombol Bayar DP jika status pembayaran adalah DP --}}
+                                                @if ($pesanan->status_pembayaran == 'dp')
+                                                    <!-- Tombol -->
+                                                    <button class="btn btn-sm btn-warning mt-2" data-bs-toggle="modal"
+                                                        data-bs-target="#dpModal{{ $pesanan->id }}">
+                                                        <i class="fas fa-check-circle"></i> Bayar DP
+                                                    </button>
+                                                    <button class="btn btn-sm btn-info mt-2" data-bs-toggle="modal"
+                                                        data-bs-target="#detailPesananModal{{ $pesanan->id }}">
+                                                        <i class="fas fa-info-circle"></i> Detail
+                                                    </button>
+                                                @elseif ($pesanan->status_pembayaran == 'konfirmasi dp')
+                                                    <span class="text-warning">Menunggu persetujuan</span>
+                                                @endif
+                                            @elseif ($pesanan->status == 'in progress (survei)')
                                                 <button class="btn btn-sm btn-info mt-2" data-bs-toggle="modal"
                                                     data-bs-target="#detailPesananModal{{ $pesanan->id }}">
                                                     <i class="fas fa-info-circle"></i> Detail
                                                 </button>
-
-                                                {{-- AAA --}}
+                                                <button class="btn btn-sm btn-warning mt-2" data-bs-toggle="modal"
+                                                    data-bs-target="#editPesananModal{{ $pesanan->id }}">
+                                                    <i class="fas fa-info-circle"></i> Edit
+                                                </button>
                                             @elseif ($pesanan->status == 'pending')
                                                 <form action="{{ route('tolakadmin', $pesanan->id) }}" method="POST"
                                                     style="display: inline;">
@@ -226,9 +252,9 @@
                                                     data-bs-target="#detailPesananModal{{ $pesanan->id }}">
                                                     <i class="fas fa-info-circle"></i> Detail
                                                 </button>
+
                                                 {{-- AAA --}}
                                             @endif
-
                                         </td>
 
                                     </tr>
@@ -243,100 +269,16 @@
         </section>
 
         @foreach ($pesanans as $pesanan)
-            <div class="modal fade" id="metodePembayaranModal{{ $pesanan->id }}" tabindex="-1"
-                aria-labelledby="metodePembayaranModalLabel{{ $pesanan->id }}" aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="metodePembayaranModalLabel{{ $pesanan->id }}">Pilih Metode
-                                Pembayaran</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <form action="{{ route('updateMetodePembayaran', $pesanan->id) }}" method="POST">
-                                @csrf
-                                @method('PATCH')
-                                <div class="mb-3">
-                                    <label for="metode_pembayaran_{{ $pesanan->id }}" class="form-label">Metode
-                                        Pembayaran</label>
-                                    <select class="form-select" name="metode_pembayaran"
-                                        id="metode_pembayaran_{{ $pesanan->id }}">
-                                        <option value="bank_transfer">Bank Transfer</option>
-                                        <option value="cash">Cash</option>
-                                    </select>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary"
-                                        data-bs-dismiss="modal">Batal</button>
-                                    <button type="submit" class="btn btn-primary">Simpan</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-
-            <div class="modal fade" id="detailPesananModal{{ $pesanan->id }}" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog modal-lg">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="detailPesananLabel{{ $pesanan->id }}">Detail Pesanan
-                                #{{ $pesanan->id }} {{ $pesanan->pelanggan->nama }}</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                aria-label="Tutup"></button>
-                        </div>
-                        <div class="modal-body">
-                            <table class="table table-bordered">
-                                <tr>
-                                    <th>ID</th>
-                                    <td>{{ $pesanan->id }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Nama Pelanggan</th>
-                                    <td>{{ $pesanan->pelanggan->nama }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Status</th>
-                                    <td>{{ $pesanan->status }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Budget</th>
-                                    <td>Rp.{{ number_format($pesanan->budget, 0, ',', '.') }}
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <th>Tgl Pengerjaan</th>
-                                    <td>{{ $pesanan->tanggal_pengerjaan }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Estimasi Pengerjaan</th>
-                                    <td>{{ $pesanan->waktu_pengerjaan }}</td>
-                                </tr>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            @include('user.modal.metodepembayaran')
+            @include('user.modal.detailpesanan')
+            @include('admin.modal.negosiasi')
+            @include('user.modal.editmodal')
+            @include('user.modal.modalbayardp')
         @endforeach
 
         @include('layoutLanding.cta')
     </main>
-    <script>
-        function filterTable() {
-            const filterValue = document.getElementById('statusFilter').value;
-            const rows = document.querySelectorAll('#orderTableBody tr');
-
-            rows.forEach(row => {
-                const status = row.getAttribute('data-status');
-                if (filterValue === 'all' || status === filterValue) {
-                    row.style.display = ''; // Tampilkan baris
-                } else {
-                    row.style.display = 'none'; // Sembunyikan baris
-                }
-            });
-        }
+    <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ config('midtrans.clientKey') }}">
     </script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -409,10 +351,19 @@
             });
         });
     </script>
+    <script>
+        function filterTable() {
+            const filterValue = document.getElementById('statusFilter').value;
+            const rows = document.querySelectorAll('#orderTableBody tr');
 
-
-    <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ config('midtrans.clientKey') }}">
+            rows.forEach(row => {
+                const status = row.getAttribute('data-status');
+                if (filterValue === 'all' || status === filterValue) {
+                    row.style.display = ''; // Tampilkan baris
+                } else {
+                    row.style.display = 'none'; // Sembunyikan baris
+                }
+            });
+        }
     </script>
-
-    @include('user.chat')
 @endsection

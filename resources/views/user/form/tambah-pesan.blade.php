@@ -51,7 +51,7 @@
                                     <option value="">-- Pilih pelanggan --</option>
                                     @foreach ($pelanggans as $pelanggan)
                                         <option value="{{ $pelanggan->id }}">{{ $pelanggan->nama }} -
-                                            {{ $pelanggan->telepon }}</option>
+                                            {{ $pelanggan->telepon }} - {{ $pelanggan->alamat }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -63,7 +63,7 @@
                         <!-- Form pelanggan baru -->
                         <div class="card mt-4">
                             <div class="card-header bg-secondary text-white">
-                                <h6 class="mb-0">Atau Buat Data Pelanggan Baru</h6>
+                                <h6 class="mb-0">Atau Buat Alamat Baru</h6>
                             </div>
                             <div class="card-body">
                                 <form action="{{ route('storeuser') }}" method="POST">
@@ -71,7 +71,9 @@
                                     <div class="mb-3">
                                         <label for="nama" class="form-label">Nama</label>
                                         <input type="text" class="form-control" id="nama" name="nama"
-                                            placeholder="Masukkan nama pelanggan" required>
+                                            value="{{ auth()->user()->name }}" placeholder="Masukkan nama pelanggan"
+                                            readonly>
+
                                     </div>
                                     <div class="mb-3">
                                         <label for="telepon" class="form-label">Telepon</label>

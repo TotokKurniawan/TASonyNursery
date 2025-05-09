@@ -116,5 +116,4 @@
             </div>
         </section>
     </main>
-    @include('user.chat')
 @endsection

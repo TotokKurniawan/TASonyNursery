@@ -67,7 +67,7 @@
                     <span class="nav-link-text ms-1">Laporan</span>
                 </a>
             </li>
-            <li class="nav-item">
+            {{-- <li class="nav-item">
                 <a class="nav-link text-white {{ Route::is('pesan') ? 'active bg-gradient-primary' : '' }}"
                     href="{{ route('pesan') }}">
                     <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
@@ -75,7 +75,7 @@
                     </div>
                     <span class="nav-link-text ms-1">Pesan</span>
                 </a>
-            </li>
+            </li> --}}
 
         </ul>
     </div>

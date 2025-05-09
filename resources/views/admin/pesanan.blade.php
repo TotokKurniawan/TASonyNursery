@@ -1,5 +1,8 @@
 @extends('layoutadmin.app')
 @section('content')
+    @php
+        $adaNegosiasi = $pesanans->contains('status', 'negosiasi');
+    @endphp
     <nav class="navbar navbar-main navbar-expand-lg px-0 mx-4 shadow-none border-radius-xl" id="navbarBlur" data-scroll="true">
         <div class="container-fluid py-1 px-3">
             <nav aria-label="breadcrumb">
@@ -82,7 +85,12 @@
                                 <select id="statusFilter" class="form-select w-auto" onchange="filterTable()"
                                     style="margin-right: 3px">
                                     <option value="">Semua Status</option>
-                                    <option value="in progress">In Progress</option>
+                                    <optgroup label="In Progress">
+                                        <option value="in progress (bayar dp)">In Progress (Bayar DP)</option>
+                                        <option value="in progress (pembuatan taman)">In Progress (Pembuatan Taman)</option>
+                                        <option value="in progress (penyelesaian akhir)">In Progress (Penyelesaian Akhir)
+                                        </option>
+                                    </optgroup>
                                     <option value="pending">Pending</option>
                                     <option value="completed">Completed</option>
                                     <option value="canceled">Canceled</option>
@@ -91,34 +99,18 @@
                             <table class="table align-items-center mb-0" id="statusTable">
                                 <thead>
                                     <tr>
-                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">No
-                                        </th>
-                                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Nama
-                                        </th>
-                                        <th
-                                            class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">
-                                            Budget</th>
-                                        <th
-                                            class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
-                                            Bunga</th>
-                                        <th
-                                            class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
-                                            alamat</th>
-                                        <th
-                                            class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
-                                            Status Pesanan</th>
-                                        <th
-                                            class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
-                                            Metode Pembayaran</th>
-                                        <th
-                                            class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
-                                            Foto Lokasi</th>
-                                        <th
-                                            class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
-                                            Foto Desain</th>
-                                        <th
-                                            class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
-                                            Action</th>
+                                        <th class="text-center w-12">No</th>
+                                        <th class="text-center w-30">Nama</th>
+                                        <th class="text-center w-30">Budget / Sisa Bayar</th>
+                                        <th class="text-center w-15">Status Pesanan</th>
+                                        <th class="text-center w-20">Status Dp</th>
+                                        <th class="text-center w-30">Nominal DP</th>
+                                        @if ($adaNegosiasi)
+                                            <th class="text-center">Negosiasi</th>
+                                        @endif
+                                        <th class="text-center w-40">Foto Lokasi</th>
+                                        <th class="text-center w-40">Foto Desain</th>
+                                        <th class="text-center w-15">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody id="orderTableBody" class="align-middle text-xxs font-weight-bolder text-center">
@@ -141,8 +133,6 @@
                                                 </div>
                                             </td>
                                             <td>Rp{{ number_format($pesanan->budget, 0, ',', '.') }}</td>
-                                            <td class="align-middle text-center">{{ $pesanan->request_bunga }}</td>
-                                            <td class="align-middle text-center">{{ $pesanan->pelanggan->alamat }}</td>
                                             <td class="align-middle text-center">
                                                 <span
                                                     class="badge
@@ -154,7 +144,19 @@
                                                     {{ ucfirst($pesanan->status) }}
                                                 </span>
                                             </td>
-                                            <td class="align-middle text-center">{{ $pesanan->metode_pembayaran }}</td>
+                                            <td class="align-middle text-center">{{ $pesanan->status_pembayaran }}</td>
+                                            <td class="align-middle text-center">
+                                                {{ 'Rp ' . number_format($pesanan->nominal_dp, 0, ',', '.') }}</td>
+                                            @if ($adaNegosiasi)
+                                                <td class="align-middle text-center">
+                                                    @if ($pesanan->status == 'negosiasi' && $pesanan->negosiasi->isNotEmpty())
+                                                        {{ $pesanan->negosiasi->last()->pesan }}
+                                                    @else
+                                                        &nbsp;
+                                                    @endif
+                                                </td>
+                                            @endif
+
                                             <td class="align-middle text-center">
                                                 @if ($pesanan->foto_lokasi)
                                                     <img src="{{ asset('storage/' . $pesanan->foto_lokasi) }}"
@@ -177,458 +179,115 @@
                                                 @endif
                                             </td>
                                             <td class="align-middle text-center">
-                                                @if ($pesanan->status == 'canceled' || $pesanan->status == 'completed')
+                                                @if ($pesanan->status == 'canceled')
+                                                    <span class="text-danger">{{ $pesanan->keterangan_tolak }} </span>
+                                                @elseif ($pesanan->status == 'completed')
                                                     <span class="text-success">Pesanan Selesai</span>
-                                                @elseif ($pesanan->status == 'in progress')
-                                                    @if ($pesanan->metode_pembayaran == 'bank_transfer')
-                                                    @elseif ($pesanan->metode_pembayaran == 'cash')
-                                                        <!-- Tidak ada tombol jika metode pembayaran adalah cash -->
-                                                    @else
-                                                        <!-- Tombol Pilih Metode Pembayaran jika belum memilih metode pembayaran -->
-                                                        <button class="btn btn-sm btn-warning mt-2" data-bs-toggle="modal"
-                                                            data-bs-target="#metodePembayaranModal{{ $pesanan->id }}">
-                                                            <i class="fas fa-credit-card"></i> Pilih Metode Pembayaran
+                                                @elseif ($pesanan->status == 'pending')
+                                                    <form action="{{ route('terimalunas', $pesanan->id) }}"
+                                                        method="POST" style="display: inline;">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <button class="btn btn-sm btn-primary mt-2" type="submit">
+                                                            <i class="fas fa-trash-alt"></i> Terima
+                                                        </button>
+                                                    </form>
+                                                    <button class="btn btn-sm btn-warning mt-2" data-bs-toggle="modal"
+                                                        data-bs-target="#negosiasiModal{{ $pesanan->id }}">
+                                                        <i class="fas fa-info-circle"></i> Negosiasi
+                                                    </button>
+                                                    <button class="btn btn-sm btn-danger mt-2" data-bs-toggle="modal"
+                                                        data-bs-target="#tolakModal{{ $pesanan->id }}">
+                                                        <i class="fas fa-info-circle"></i> Tolak
+                                                    </button>
+                                                    <button class="btn btn-sm btn-info mt-2" data-bs-toggle="modal"
+                                                        data-bs-target="#cetakPesananModal{{ $pesanan->id }}">
+                                                        <i class="fas fa-info-circle"></i> Detail
+                                                    </button>
+                                                @elseif ($pesanan->status == 'in progress (survei)')
+                                                    <button class="btn btn-sm btn-info mt-2" data-bs-toggle="modal"
+                                                        data-bs-target="#cetakPesananModal{{ $pesanan->id }}">
+                                                        <i class="fas fa-info-circle"></i> Detail
+                                                    </button>
+                                                    <button class="btn btn-sm btn-warning mt-2" data-bs-toggle="modal"
+                                                        data-bs-target="#editPesananModal{{ $pesanan->id }}">
+                                                        <i class="fas fa-info-circle"></i> Edit
+                                                    </button>
+                                                    @if ($pesanan->status_pembayaran == 'belum lunas')
+                                                        <form action="{{ route('lanjutadmin', $pesanan->id) }}"
+                                                            method="POST" style="display: inline;">
+                                                            @csrf
+                                                            @method('PATCH')
+                                                            <button class="btn btn-sm btn-primary mt-2" type="submit">
+                                                                <i class="fas fa-trash-alt"></i> Lanjut
+                                                            </button>
+                                                        </form>
+                                                    @elseif ($pesanan->status_pembayaran == 'dp')
+                                                        <form action="{{ route('terimaadmin', $pesanan->id) }}"
+                                                            method="POST" style="display: inline;">
+                                                            @csrf
+                                                            @method('PATCH')
+                                                            <button class="btn btn-sm btn-primary mt-2" type="submit">
+                                                                <i class="fas fa-trash-alt"></i> Lanjut
+                                                            </button>
+                                                        </form>
+                                                        <button class="btn btn-sm btn-danger mt-2" data-bs-toggle="modal"
+                                                            data-bs-target="#editPesananModal{{ $pesanan->id }}">
+                                                            <i class="fas fa-info-circle"></i> Tolak
                                                         </button>
                                                     @endif
-
+                                                @elseif ($pesanan->status == 'in progress (bayar dp)')
+                                                    <button class="btn btn-sm btn-info mt-2" data-bs-toggle="modal"
+                                                        data-bs-target="#cetakPesananModal{{ $pesanan->id }}">
+                                                        <i class="fas fa-info-circle"></i> Detail
+                                                    </button>
+                                                    <button class="btn btn-sm btn-warning mt-2" data-bs-toggle="modal"
+                                                        data-bs-target="#lihatbukti{{ $pesanan->id }}">
+                                                        <i class="fas fa-info-circle"></i> Bukti dp
+                                                    </button>
+                                                    <form action="{{ route('lanjutadmin', $pesanan->id) }}"
+                                                        method="POST" style="display: inline;">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <button class="btn btn-sm btn-primary mt-2" type="submit">
+                                                            <i class="fas fa-trash-alt"></i> Lanjut
+                                                        </button>
+                                                    </form>
+                                                @elseif ($pesanan->status == 'in progress (pembuatan taman)')
+                                                    <button class="btn btn-sm btn-info mt-2" data-bs-toggle="modal"
+                                                        data-bs-target="#cetakPesananModal{{ $pesanan->id }}">
+                                                        <i class="fas fa-info-circle"></i> Detail
+                                                    </button>
                                                     <form action="{{ route('selesaiadmin', $pesanan->id) }}"
                                                         method="POST" style="display: inline;">
                                                         @csrf
                                                         @method('PATCH')
-                                                        <button class="btn btn-sm btn-primary mt-2" type="submit">
-                                                            <i class="fas fa-check-circle"></i> Selesai
+                                                        <button class="btn btn-sm btn-success mt-2" type="submit">
+                                                            <i class="fas fa-trash-alt"></i> Selesai
                                                         </button>
                                                     </form>
-                                                    <button class="btn btn-sm btn-warning mt-2" data-bs-toggle="modal"
-                                                        data-bs-target="#editPesananModal{{ $pesanan->id }}">
-                                                        <i class="fas fa-edit"></i> Edit
-                                                    </button>
-
-                                                    <!-- Modal Edit Pesanan -->
-                                                    <div class="modal fade" id="editPesananModal{{ $pesanan->id }}"
-                                                        tabindex="-1"
-                                                        aria-labelledby="editPesananLabel{{ $pesanan->id }}"
-                                                        aria-hidden="true">
-                                                        <div class="modal-dialog modal-dialog-centered">
-                                                            <div class="modal-content">
-                                                                <form action="{{ route('pesanan.update', $pesanan->id) }}"
-                                                                    method="POST">
-                                                                    @csrf
-                                                                    @method('patch')
-
-                                                                    <div class="modal-header">
-                                                                        <h5 class="modal-title"
-                                                                            id="editPesananLabel{{ $pesanan->id }}">Edit
-                                                                            Pesanan</h5>
-                                                                        <button type="button" class="btn-close"
-                                                                            data-bs-dismiss="modal"
-                                                                            aria-label="Tutup"></button>
-                                                                    </div>
-
-                                                                    <div class="modal-body">
-                                                                        <div class="mb-3">
-                                                                            <label for="budget{{ $pesanan->id }}"
-                                                                                class="form-label">Budget</label>
-                                                                            <input type="text" name="budget"
-                                                                                class="form-control"
-                                                                                id="budget{{ $pesanan->id }}"
-                                                                                value="{{ $pesanan->budget }}" required>
-                                                                        </div>
-
-                                                                        <div class="mb-3">
-                                                                            <label
-                                                                                for="waktuPengerjaan{{ $pesanan->id }}"
-                                                                                class="form-label">Waktu Pengerjaan
-                                                                                (hari)
-                                                                            </label>
-                                                                            <input type="text" name="waktu_pengerjaan"
-                                                                                class="form-control"
-                                                                                id="waktuPengerjaan{{ $pesanan->id }}"
-                                                                                value="{{ $pesanan->waktu_pengerjaan }}"
-                                                                                required>
-                                                                        </div>
-
-                                                                        <div class="mb-3">
-                                                                            <label
-                                                                                for="tanggalPengerjaan{{ $pesanan->id }}"
-                                                                                class="form-label">Tanggal
-                                                                                Pengerjaan</label>
-                                                                            <input type="date"
-                                                                                name="tanggal_pengerjaan"
-                                                                                class="form-control"
-                                                                                id="tanggalPengerjaan{{ $pesanan->id }}"
-                                                                                value="{{ $pesanan->tanggal_pengerjaan }}"
-                                                                                required>
-                                                                        </div>
-
-                                                                        <div class="mb-3">
-                                                                            <label
-                                                                                for="statusPembayaran{{ $pesanan->id }}"
-                                                                                class="form-label">Status
-                                                                                Pembayaran</label>
-                                                                            <select name="status_pembayaran"
-                                                                                id="statusPembayaran{{ $pesanan->id }}"
-                                                                                class="form-select" required>
-                                                                                <option value="belum"
-                                                                                    {{ $pesanan->status_pembayaran == 'belum lunas' ? 'selected' : '' }}>
-                                                                                    Belum lunas</option>
-                                                                                <option value="dp"
-                                                                                    {{ $pesanan->status_pembayaran == 'dp' ? 'selected' : '' }}>
-                                                                                    DP</option>
-                                                                                <option value="lunas"
-                                                                                    {{ $pesanan->status_pembayaran == 'lunas' ? 'selected' : '' }}>
-                                                                                    Lunas</option>
-                                                                            </select>
-                                                                        </div>
-                                                                    </div>
-
-                                                                    <div class="modal-footer">
-                                                                        <button type="button" class="btn btn-secondary"
-                                                                            data-bs-dismiss="modal">Batal</button>
-                                                                        <button type="submit"
-                                                                            class="btn btn-primary">Simpan
-                                                                            Perubahan</button>
-                                                                    </div>
-                                                                </form>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-
-                                                    <button class="btn btn-sm btn-success mt-2" data-bs-toggle="modal"
-                                                        data-bs-target="#cetakPesananModal{{ $pesanan->id }}">
-                                                        <i class="fas fa-check-circle"></i> Detail
-                                                    </button>
-
-                                                    <div class="modal fade" id="metodePembayaranModal{{ $pesanan->id }}"
-                                                        tabindex="-1" aria-labelledby="metodePembayaranModalLabel"
-                                                        aria-hidden="true">
-                                                        <div class="modal-dialog">
-                                                            <div class="modal-content">
-                                                                <div class="modal-header">
-                                                                    <h5 class="modal-title"
-                                                                        id="metodePembayaranModalLabel">Pilih Pembayaran
-                                                                    </h5>
-                                                                    <button type="button" class="btn-close"
-                                                                        data-bs-dismiss="modal"
-                                                                        aria-label="Close"></button>
-                                                                </div>
-                                                                <div class="modal-body">
-                                                                    <form
-                                                                        action="{{ route('updateMetodePembayaran', $pesanan->id) }}"
-                                                                        method="POST">
-                                                                        @csrf
-                                                                        @method('PATCH')
-                                                                        <div class="mb-3">
-                                                                            <label for="metode_pembayaran"
-                                                                                class="form-label">Metode
-                                                                                Pembayaran</label>
-                                                                            <select class="form-select"
-                                                                                id="metode_pembayaran"
-                                                                                name="metode_pembayaran" required>
-                                                                                <option value="bank_transfer"
-                                                                                    {{ $pesanan->metode_pembayaran == 'bank_transfer' ? 'selected' : '' }}>
-                                                                                    Transfer Bank</option>
-                                                                                <option value="cash"
-                                                                                    {{ $pesanan->metode_pembayaran == 'cash' ? 'selected' : '' }}>
-                                                                                    Cash</option>
-                                                                            </select>
-                                                                        </div>
-                                                                        <button type="submit"
-                                                                            class="btn btn-primary">Simpan</button>
-                                                                    </form>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <!-- Modal Cetak Pesanan -->
-                                                    <div class="modal fade" id="cetakPesananModal{{ $pesanan->id }}"
-                                                        tabindex="-1" aria-labelledby="cetakPesananModalLabel"
-                                                        aria-hidden="true">
-                                                        <div class="modal-dialog modal-lg modal-dialog-centered">
-                                                            <div class="modal-content shadow-lg overflow-hidden">
-                                                                <div class="modal-header text-white">
-                                                                    <h5 class="modal-title" id="cetakPesananModalLabel">
-                                                                        <i class="fas fa-file-invoice"></i> Detail Pesanan
-                                                                        #
-                                                                        {{ $pesanan->pelanggan->nama }}
-                                                                    </h5>
-                                                                    <button type="button" class="btn-close text-white"
-                                                                        data-bs-dismiss="modal"
-                                                                        aria-label="Close"></button>
-                                                                </div>
-                                                                <div class="modal-body mt-sm-0
-                                                                                            <div class="card
-                                                                    p-3 border-0 shadow-sm">
-                                                                    <div class="card-body">
-                                                                        <div class="row">
-                                                                            <!-- Foto Desain -->
-                                                                            <div class="col-md-6">
-                                                                                <div class="card shadow-sm border-0">
-                                                                                    <div class="card-body text-center">
-                                                                                        <h6 class="text-muted">Desain Taman
-                                                                                        </h6>
-                                                                                        <img src="{{ asset('storage/' . ($pesanan->desain->foto ?? 'default-design.jpg')) }}"
-                                                                                            alt="Foto Desain"
-                                                                                            class="img-fluid rounded shadow-sm"
-                                                                                            style="width: 100%; aspect-ratio: 4/3; object-fit: cover;">
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-
-                                                                            <!-- Foto Lokasi -->
-                                                                            <div class="col-md-6">
-                                                                                <div class="card shadow-sm border-0">
-                                                                                    <div class="card-body text-center">
-                                                                                        <h6 class="text-muted">Lokasi
-                                                                                            Pemasangan</h6>
-                                                                                        <img src="{{ asset('storage/' . $pesanan->foto_lokasi) }}"
-                                                                                            alt="Foto Lokasi"
-                                                                                            class="img-fluid rounded shadow-sm"
-                                                                                            style="width: 100%; aspect-ratio: 4/3; object-fit: cover;">
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <hr>
-
-                                                                        <!-- Detail Pesanan -->
-                                                                        <p><strong>Budget:</strong>
-                                                                            Rp{{ number_format($pesanan->budget, 0, ',', '.') }}
-                                                                        </p>
-                                                                        <p><strong>no telepon:</strong>
-                                                                            {{ $pesanan->pelanggan->telepon }}</p>
-                                                                        <p><strong>waktu pengerjaan:</strong>
-                                                                            {{ $pesanan->waktu_pengerjaan }}</p>
-                                                                        <p><strong>tanggal pengerjaan:</strong>
-                                                                            {{ $pesanan->tanggal_pengerjaan }}
-                                                                        </p>
-                                                                        <p><strong>Status Pembayaran</strong>:
-                                                                            <span
-                                                                                class="badge
-                                                                                @if ($pesanan->status_pembayaran == 'dp') bg-warning
-                                                                                @elseif($pesanan->status_pembayaran == 'belum lunas') bg-primary
-                                                                                @elseif($pesanan->status_pembayaran == 'lunas') bg-success
-                                                                                @else bg-secondary @endif">
-                                                                                {{ ucfirst($pesanan->status_pembayaran) }}
-                                                                            </span>
-                                                                        </p>
-
-                                                                        <p><strong>Nominal DP</strong>
-                                                                            {{ $pesanan->nominal_dp }}</p>
-                                                                        <p><strong>Keterangan tambahan:</strong>
-                                                                            {{ $pesanan->keterangan_tambahan }}</p>
-                                                                        <p><strong>Request Bunga:</strong>
-                                                                            {{ $pesanan->request_bunga }}</p>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
                                                 @elseif ($pesanan->status == 'negosiasi')
-                                                    <form action="{{ route('terimaadmin', $pesanan->id) }}"
-                                                        method="POST" style="display: inline;">
-                                                        @csrf
-                                                        @method('PATCH')
-                                                        <button class="btn btn-sm btn-primary mt-2" type="submit">
-                                                            <i class="fas fa-check-circle"></i> Terima
-                                                        </button>
-                                                    </form>
-                                                    <button type="button" class="btn btn-sm btn-danger mt-2"
-                                                        data-bs-toggle="modal"
-                                                        data-bs-target="#tolakModal{{ $pesanan->id }}">
-                                                        <i class="fas fa-trash-alt"></i> Tolak
-                                                    </button>
-                                                @elseif ($pesanan->status == 'pending')
-                                                    <!-- Tombol trigger modal -->
-                                                    <button type="button" class="btn btn-sm btn-danger mt-2"
-                                                        data-bs-toggle="modal"
-                                                        data-bs-target="#tolakModal{{ $pesanan->id }}">
-                                                        <i class="fas fa-trash-alt"></i> Tolak
-                                                    </button>
-                                                    <button class="btn btn-sm btn-success mt-2" data-bs-toggle="modal"
-                                                        data-bs-target="#cetakPesananModal{{ $pesanan->id }}">
-                                                        <i class="fas fa-check-circle"></i> Detail
-                                                    </button>
-
-                                                    <form action="{{ route('terimaadmin', $pesanan->id) }}"
-                                                        method="POST" style="display: inline;">
-                                                        @csrf
-                                                        @method('PATCH')
-                                                        <button class="btn btn-sm btn-primary mt-2" type="submit">
-                                                            <i class="fas fa-check-circle"></i> Terima
-                                                        </button>
-                                                    </form>
-                                                    <!-- Tombol trigger modal negosiasi -->
-                                                    <button type="button" class="btn btn-sm btn-warning mt-2"
-                                                        data-bs-toggle="modal"
+                                                    <button class="btn btn-sm btn-warning mt-2" data-bs-toggle="modal"
                                                         data-bs-target="#negosiasiModal{{ $pesanan->id }}">
-                                                        <i class="fas fa-comments"></i> Negosiasi
+                                                        <i class="fas fa-info-circle"></i> Negosiasi
                                                     </button>
 
-                                                    <!-- Modal Negosiasi -->
-                                                    <div class="modal fade" id="negosiasiModal{{ $pesanan->id }}"
-                                                        tabindex="-1" aria-labelledby="negosiasiModalLabel"
-                                                        aria-hidden="true">
-                                                        <div class="modal-dialog">
-                                                            <form action="{{ route('pesanan.negosiasi', $pesanan->id) }}"
-                                                                method="POST">
-                                                                @csrf
-                                                                @method('PATCH')
-                                                                <div class="modal-content">
-                                                                    <div class="modal-header">
-                                                                        <h5 class="modal-title">Keterangan Negosiasi</h5>
-                                                                        <button type="button" class="btn-close"
-                                                                            data-bs-dismiss="modal"></button>
-                                                                    </div>
-                                                                    <div class="modal-body">
-                                                                        <div class="mb-3">
-                                                                            <label for="keterangan_banding"
-                                                                                class="form-label">Masukkan keterangan
-                                                                                negosiasi:</label>
-                                                                            <textarea class="form-control" name="keterangan_banding" rows="3" required></textarea>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="modal-footer">
-                                                                        <button type="button" class="btn btn-secondary"
-                                                                            data-bs-dismiss="modal">Batal</button>
-                                                                        <button type="submit"
-                                                                            class="btn btn-warning">Kirim
-                                                                            Negosiasi</button>
-                                                                    </div>
-                                                                </div>
-                                                            </form>
-                                                        </div>
-                                                    </div>
-                                                    <!-- Modal Cetak Pesanan -->
-                                                    <div class="modal fade" id="cetakPesananModal{{ $pesanan->id }}"
-                                                        tabindex="-1" aria-labelledby="cetakPesananModalLabel"
-                                                        aria-hidden="true">
-                                                        <div class="modal-dialog modal-lg modal-dialog-centered">
-                                                            <div class="modal-content shadow-lg overflow-hidden">
-                                                                <div class="modal-header text-white">
-                                                                    <h5 class="modal-title" id="cetakPesananModalLabel">
-                                                                        <i class="fas fa-file-invoice"></i> Detail Pesanan
-                                                                        #{{ $pesanan->pelanggan->nama }}
-                                                                    </h5>
-                                                                    <button type="button" class="btn-close text-white"
-                                                                        data-bs-dismiss="modal"
-                                                                        aria-label="Close"></button>
-                                                                </div>
-                                                                <div class="modal-body">
-                                                                    <!-- Tabel untuk Detail Pesanan -->
-                                                                    <table class="table table-bordered">
-                                                                        <thead>
-                                                                            <tr>
-                                                                                <th colspan="2" class="text-center">
-                                                                                    Detail Pesanan</th>
-                                                                            </tr>
-                                                                        </thead>
-                                                                        <tbody>
-                                                                            {{-- <tr>
-                                                                                <td><strong>Desain Taman:</strong></td>
-                                                                                <td>
-                                                                                    <img src="{{ asset('storage/' . ($pesanan->desain->foto ?? 'default-design.jpg')) }}"
-                                                                                        alt="Foto Desain"
-                                                                                        class="img-fluid rounded shadow-sm"
-                                                                                        style="width: 100px; height: auto;">
-                                                                                </td>
-                                                                            </tr>
-                                                                            <tr>
-                                                                                <td><strong>Lokasi Pemasangan:</strong></td>
-                                                                                <td>
-                                                                                    <img src="{{ asset('storage/' . $pesanan->foto_lokasi) }}"
-                                                                                        alt="Foto Lokasi"
-                                                                                        class="img-fluid rounded shadow-sm"
-                                                                                        style="width: 100px; height: auto;">
-                                                                                </td>
-                                                                            </tr> --}}
-                                                                            <tr>
-                                                                                <td><strong>Budget:</strong></td>
-                                                                                <td>Rp{{ number_format($pesanan->budget, 0, ',', '.') }}
-                                                                                </td>
-                                                                            </tr>
-                                                                            <tr>
-                                                                                <td><strong>No Telepon:</strong></td>
-                                                                                <td>{{ $pesanan->pelanggan->telepon }}</td>
-                                                                            </tr>
-                                                                            <tr>
-                                                                                <td><strong>Waktu Pengerjaan:</strong></td>
-                                                                                <td>{{ $pesanan->waktu_pengerjaan }}</td>
-                                                                            </tr>
-                                                                            <tr>
-                                                                                <td><strong>Tanggal Pengerjaan:</strong>
-                                                                                </td>
-                                                                                <td>{{ $pesanan->tanggal_pengerjaan }}</td>
-                                                                            </tr>
-                                                                            <tr>
-                                                                                <td><strong>Status Pembayaran:</strong></td>
-                                                                                <td>
-                                                                                    <span
-                                                                                        class="badge @if ($pesanan->status_pembayaran == 'dp') bg-warning @elseif($pesanan->status_pembayaran == 'belum lunas') bg-primary @elseif($pesanan->status_pembayaran == 'lunas') bg-success @else bg-secondary @endif">
-                                                                                        {{ ucfirst($pesanan->status_pembayaran) }}
-                                                                                    </span>
-                                                                                </td>
-                                                                            </tr>
-                                                                            <tr>
-                                                                                <td><strong>Nominal DP:</strong></td>
-                                                                                <td>Rp{{ number_format($pesanan->nominal_dp, 0, ',', '.') }}
-                                                                                </td>
-                                                                            </tr>
-                                                                            <tr>
-                                                                                <td><strong>Keterangan Tambahan:</strong>
-                                                                                </td>
-                                                                                <td>{{ $pesanan->keterangan_tambahan }}
-                                                                                </td>
-                                                                            </tr>
-                                                                            <tr>
-                                                                                <td><strong>Request Bunga:</strong></td>
-                                                                                <td>{{ $pesanan->request_bunga }}</td>
-                                                                            </tr>
-                                                                        </tbody>
-                                                                    </table>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-
-                                                    <!-- Modal Tolak -->
-                                                    <div class="modal fade" id="tolakModal{{ $pesanan->id }}"
-                                                        tabindex="-1" aria-labelledby="tolakModalLabel"
-                                                        aria-hidden="true">
-                                                        <div class="modal-dialog">
-                                                            <form action="{{ route('tolakadmin', $pesanan->id) }}"
-                                                                method="POST">
-                                                                @csrf
-                                                                @method('PATCH')
-                                                                <div class="modal-content">
-                                                                    <div class="modal-header">
-                                                                        <h5 class="modal-title">Alasan Penolakan</h5>
-                                                                        <button type="button" class="btn-close"
-                                                                            data-bs-dismiss="modal"
-                                                                            aria-label="Tutup"></button>
-                                                                    </div>
-                                                                    <div class="modal-body">
-                                                                        <div class="mb-3">
-                                                                            <label for="keterangan_tolak"
-                                                                                class="form-label">Masukkan alasan
-                                                                                penolakan:</label>
-                                                                            <textarea class="form-control" name="keterangan_tolak" rows="3" required></textarea>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="modal-footer">
-                                                                        <button type="button" class="btn btn-secondary"
-                                                                            data-bs-dismiss="modal">Batal</button>
-                                                                        <button type="submit"
-                                                                            class="btn btn-danger">Tolak Pesanan</button>
-                                                                    </div>
-                                                                </div>
-                                                            </form>
-
-                                                        </div>
-                                                    </div>
+                                                    <button class="btn btn-sm btn-info mt-2" data-bs-toggle="modal"
+                                                        data-bs-target="#cetakPesananModal{{ $pesanan->id }}">
+                                                        <i class="fas fa-info-circle"></i> Detail
+                                                    </button>
+                                                    <form action="{{ route('terimalunas', $pesanan->id) }}"
+                                                        method="POST" style="display: inline;">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <button class="btn btn-sm btn-primary mt-2" type="submit">
+                                                            <i class="fas fa-trash-alt"></i> Terima
+                                                        </button>
+                                                    </form>
+                                                    <button class="btn btn-sm btn-danger mt-2" data-bs-toggle="modal"
+                                                        data-bs-target="#tolakModal{{ $pesanan->id }}">
+                                                        <i class="fas fa-info-circle"></i> Tolak
+                                                    </button>
                                                 @endif
                                             </td>
                                         </tr>
@@ -636,7 +295,7 @@
                                 </tbody>
                             </table>
 
-                            <div class="d-flex justify-content-center mt-4 text-black">
+                            <div class="d-flex  mt-4 text-black justify-content-center">
                                 <ul class="pagination">
                                     <li class="page-item {{ $pesanans->onFirstPage() ? 'disabled' : '' }}">
                                         <a class="page-link" href="{{ $pesanans->previousPageUrl() }}"
@@ -694,6 +353,14 @@
         });
     </script>
 @endsection
+@foreach ($pesanans as $pesanan)
+    @include('admin.modal.editcetakpesanan')
+    @include('admin.modal.editpesanan')
+    @include('admin.modal.editpembayaran')
+    @include('admin.modal.modaltolak')
+    @include('admin.modal.negosiasi')
+    @include('admin.modal.dpmodal')
+@endforeach
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {

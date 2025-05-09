@@ -67,6 +67,15 @@
                                                                 type="submit">Continue</button>
                                                         </div>
                                                     </div>
+                                                    <!-- Tombol kembali ke Sign In -->
+                                                    <div class="col-12 mt-3">
+                                                        <div class="text-center">
+                                                            <a href="{{ route('login') }}"
+                                                                class="btn btn-outline-secondary">
+                                                                Kembali ke Sign In
+                                                            </a>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </form>
 

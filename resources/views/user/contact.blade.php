@@ -128,5 +128,4 @@
         @include('layoutLanding.cta')
 
     </main>
-    @include('user.chat')
 @endsection

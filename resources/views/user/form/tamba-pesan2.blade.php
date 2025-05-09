@@ -52,14 +52,15 @@
                                     placeholder="Masukkan panjang dan lebar lahan" required>
                             </div>
                             <div class="mb-3">
-                                <label for="tanggal_pengerjaan" class="form-label">Tanggal Pengerjaan</label>
-                                <input type="date" class="form-control" id="tanggal_pengerjaan" name="tanggal_pengerjaan"
+                                <label for="tanggal_pengerjaan" class="form-label">Dikerjakan tanggal / Tanggal Untuk
+                                    Survei</label>
+                                <input type="date" class="form-control" id="tanggal_survei" name="tanggal_survei"
                                     required>
                             </div>
                             <div class="mb-3">
-                                <label for="waktu_pengerjaan" class="form-label">Waktu Pengerjaan</label>
-                                <input type="text" class="form-control" id="waktu_pengerjaan" name="waktu_pengerjaan"
-                                    placeholder="Masukkan waktu pengerjaan" required>
+                                <label for="waktu_pengerjaan" class="form-label">Harus selesai Tanggal</label>
+                                <input type="date" class="form-control" id="tanggal_selesai" name="tanggal_selesai"
+                                    placeholder="Masukkan waktu selesai" required>
                             </div>
                             <div class="mb-3">
                                 <label for="pembayaran" class="form-label">Pembayaran</label>
@@ -73,21 +74,17 @@
 
                             <!-- Input Nominal DP (disembunyikan secara default) -->
                             <div class="mb-3" id="nominalDPField" style="display: none;">
-                                <label for="nominal_dp" class="form-label">Nominal DP</label>
-                                <input type="number" class="form-control" id="nominal_dp" name="nominal_dp"
+                                <label for="nominal_dp_display" class="form-label">Nominal DP</label>
+
+                                <!-- Input untuk tampilan (diformat sebagai rupiah) -->
+                                <input type="text" class="form-control" id="nominal_dp_display"
                                     placeholder="Masukkan nominal DP">
+
+                                <!-- Input tersembunyi untuk dikirim ke backend -->
+                                <input type="hidden" id="nominal_dp" name="nominal_dp">
                             </div>
 
-                            <script>
-                                function toggleNominalDP(select) {
-                                    const nominalField = document.getElementById('nominalDPField');
-                                    if (select.value === 'dp') {
-                                        nominalField.style.display = 'block';
-                                    } else {
-                                        nominalField.style.display = 'none';
-                                    }
-                                }
-                            </script>
+
 
                             <!-- Input Request Bunga -->
                             <div class="mb-3">
@@ -122,6 +119,7 @@
                                 </div>
                             </div>
 
+
                             <!-- Tombol Submit -->
                             <button type="submit" class="btn btn-primary">Submit</button>
                         </form>
@@ -133,4 +131,60 @@
         </section>
 
     </main>
+    <script>
+        const displayInput = document.getElementById('nominal_dp_display');
+        const hiddenInput = document.getElementById('nominal_dp');
+
+        // Format angka jadi rupiah
+        function formatRupiah(angka) {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0
+            }).format(angka);
+        }
+
+        displayInput.addEventListener('input', function() {
+            let rawValue = this.value.replace(/\D/g, ''); // Hapus semua karakter selain angka
+
+            // Update hidden input (untuk disimpan)
+            hiddenInput.value = rawValue;
+
+            // Tampilkan kembali dalam format Rupiah
+            if (rawValue) {
+                this.value = formatRupiah(rawValue);
+            } else {
+                this.value = '';
+            }
+        });
+
+        function toggleNominalDP(select) {
+            const nominalField = document.getElementById('nominalDPField');
+            if (select.value === 'dp') {
+                nominalField.style.display = 'block';
+            } else {
+                nominalField.style.display = 'none';
+            }
+        }
+
+        const budgetInput = document.getElementById('Budget');
+
+        // Format Rupiah saat diketik
+        budgetInput.addEventListener('input', function(e) {
+            let value = this.value.replace(/\D/g, ''); // Hapus semua non-digit
+            this.value = formatRupiah(value);
+        });
+
+        // Format fungsi
+        function formatRupiah(angka) {
+            return angka.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        }
+
+        // Sebelum form disubmit, hapus format dan kirim angka saja
+        const form = budgetInput.closest('form');
+        form.addEventListener('submit', function() {
+            const cleanValue = budgetInput.value.replace(/\./g, ''); // Hapus titik
+            budgetInput.value = cleanValue; // Simpan hanya angka ke database
+        });
+    </script>
 @endsection

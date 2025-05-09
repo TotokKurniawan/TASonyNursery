@@ -35,44 +35,46 @@ class PesananUserController extends Controller
         $request->validate([
             'spesifikasi_lahan' => 'required|string|max:255',
             'request_bunga' => 'required|string',
-            'waktu_pengerjaan' => 'required|string',
-            'tanggal_pengerjaan' => 'required|date',
+            'tanggal_survei' => 'required|date',
+            'tanggal_selesai' => 'required|date',
             'keterangan_tambahan' => 'required|string',
             'foto_lokasi' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
             'foto_design' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'Budget' => 'required|numeric|min:0',
             'id_pelanggan' => 'required|exists:pelanggans,id',
-            'pembayaran' => 'required|string|in:dp,belum lunas', // Validasi untuk jenis pembayaran
-            'nominal_dp' => 'nullable|numeric|min:0', // Validasi untuk nominal DP (jika ada)
+            'pembayaran' => 'required|string|in:dp,belum lunas',
+            'nominal_dp' => 'nullable|numeric|min:0',
         ]);
 
         // Upload file foto lokasi
         $fotoLokasiPath = $request->file('foto_lokasi')->store('uploads/foto_lokasi', 'public');
 
-        // Upload file foto design jika ada
+        // Upload file foto desain (jika ada)
         $fotoDesignPath = $request->hasFile('foto_design')
             ? $request->file('foto_design')->store('uploads/foto_design', 'public')
             : null;
 
-        // Menyimpan data pesanan ke database
+
+        // Simpan data pesanan
         $pesanan = Pesanan::create([
             'spesifikasi_lahan' => $request->spesifikasi_lahan,
             'request_bunga' => $request->request_bunga,
             'foto_lokasi' => $fotoLokasiPath,
             'foto_desain' => $fotoDesignPath,
             'budget' => $request->Budget,
-            'tanggal_pengerjaan' => $request->tanggal_pengerjaan,
-            'waktu_pengerjaan' => $request->waktu_pengerjaan,
+            'tanggal_survei' => $request->tanggal_survei,
+            'tanggal_selesai' => $request->tanggal_selesai,
             'keterangan_tambahan' => $request->keterangan_tambahan,
-            'status' => 'pending', // Status default adalah 'pending'
+            'status' => 'pending',
             'id_pelanggan' => $request->id_pelanggan,
-            'status_pembayaran' => $request->pembayaran, // Menyimpan status pembayaran
-            'nominal_dp' => $request->pembayaran == 'dp' ? $request->nominal_dp : 0, // Jika pembayaran DP, simpan nominalnya
+            'status_pembayaran' => $request->pembayaran,
+            'nominal_dp' => $request->pembayaran === 'dp' ? $request->nominal_dp : 0,
+            'bukti_dp' => 'NULL',
         ]);
 
-        // Redirect dengan pesan sukses
         return redirect()->route('pesananUser')->with('success', 'Pesanan berhasil dibuat!');
     }
+
 
     public function tolak($id)
     {

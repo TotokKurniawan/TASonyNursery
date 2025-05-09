@@ -78,5 +78,5 @@
         @include('layoutLanding.gallery')
         @include('layoutLanding.cta')
     </main>
-    @include('user.chat')
+    {{-- @include('user.chat') --}}
 @endsection

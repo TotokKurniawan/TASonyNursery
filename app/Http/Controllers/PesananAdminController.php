@@ -2,15 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\negosiasi;
 use App\Models\pesanan;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class PesananAdminController extends Controller
 {
     public function Pesanan()
     {
-        $pesanans = Pesanan::with(['pelanggan', 'desain'])
+        $pesanans = Pesanan::with(['pelanggan', 'desain', 'negosiasi'])
             ->orderBy('id', 'DESC')
             ->paginate(10);
 
@@ -31,20 +33,6 @@ class PesananAdminController extends Controller
 
         return back()->with('error', 'Pesanan tidak ditemukan.');
     }
-    public function negosiasi(Request $request, $id)
-    {
-        $pesanan = Pesanan::find($id);
-
-        if ($pesanan) {
-            $pesanan->status = 'negosiasi';
-            $pesanan->keterangan_banding = $request->keterangan_banding; // disimpan di kolom ini
-            $pesanan->save();
-
-            return back()->with('success', 'Pesanan masuk tahap negosiasi.');
-        }
-
-        return back()->with('error', 'Pesanan tidak ditemukan.');
-    }
 
     public function terimaadmin($id)
     {
@@ -54,7 +42,41 @@ class PesananAdminController extends Controller
         // Cek apakah pesanan ditemukan
         if ($pesanan) {
             // Update status pesanan menjadi 'in progress'
-            $pesanan->status = 'in progress';
+            $pesanan->status = 'in progress (bayar dp)';
+            $pesanan->save();
+
+            // Redirect dengan pesan sukses
+            return back()->with('success', 'Pesanan berhasil diterima');
+        }
+
+        return back()->with('error', 'Pesanan tidak ditemukan');
+    }
+    public function lanjutadmin($id)
+    {
+        // Ambil data pesanan berdasarkan ID
+        $pesanan = pesanan::find($id);
+
+        // Cek apakah pesanan ditemukan
+        if ($pesanan) {
+            // Update status pesanan menjadi 'in progress'
+            $pesanan->status = 'in progress (pembuatan taman)';
+            $pesanan->save();
+
+            // Redirect dengan pesan sukses
+            return back()->with('success', 'Pesanan berhasil diterima');
+        }
+
+        return back()->with('error', 'Pesanan tidak ditemukan');
+    }
+    public function terimalunas($id)
+    {
+        // Ambil data pesanan berdasarkan ID
+        $pesanan = pesanan::find($id);
+
+        // Cek apakah pesanan ditemukan
+        if ($pesanan) {
+            // Update status pesanan menjadi 'in progress'
+            $pesanan->status = 'in progress (survei)';
             $pesanan->save();
 
             // Redirect dengan pesan sukses
@@ -113,9 +135,9 @@ class PesananAdminController extends Controller
     {
         $request->validate([
             'budget' => 'required',
-            'waktu_pengerjaan' => 'required|string|max:255',
-            'tanggal_pengerjaan' => 'required|date',
-            'status_pembayaran' => 'required|in:belum,dp,lunas',
+            'tanggal_survei' => 'required|date',
+            'tanggal_selesai' => 'required|date',
+            'status_pembayaran' => 'required|in:belum,dp,lunas,dp lunas',
         ]);
 
         $pesanan = Pesanan::findOrFail($id);
@@ -125,8 +147,8 @@ class PesananAdminController extends Controller
 
         $pesanan->update([
             'budget' => (int) $cleanBudget,
-            'waktu_pengerjaan' => $request->waktu_pengerjaan,
-            'tanggal_pengerjaan' => $request->tanggal_pengerjaan,
+            'tanggal_survei' => $request->tanggal_survei,
+            'tanggal_selesai' => $request->tanggal_selesai,
             'status_pembayaran' => $request->status_pembayaran,
         ]);
 

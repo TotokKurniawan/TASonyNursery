@@ -141,6 +141,5 @@
         @include('layoutLanding.Faq')
         @include('layoutLanding.cta2')
     </main>
-    @include('user.chat')
     @include('layoutLanding.gallery')
 @endsection

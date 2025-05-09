@@ -62,7 +62,8 @@
                                                             {{ $design->konsep }}</p>
                                                         <p class="card-text"><strong>Lahan yang dibutuhkan:</strong>
                                                             {{ $design->lahan }}</p>
-                                                        <p class="card-text"><strong>Harga:</strong> {{ $design->harga }}
+                                                        <p class="card-text"><strong>Harga: </strong>
+                                                            Rp.{{ $design->harga }}
                                                         </p>
 
                                                         <!-- Radio Button dengan data-harga dan data-lahan -->
@@ -97,18 +98,19 @@
                             <div class="mb-3">
                                 <label for="spesifikasi_lahan" class="form-label">Spesifikasi Lahan</label>
                                 <input type="text" class="form-control" id="spesifikasi_lahan" name="spesifikasi_lahan"
-                                    placeholder="Masukkan panjang dan lebar lahan" required readonly>
+                                    placeholder="Masukkan panjang dan lebar lahan" required>
                             </div>
 
                             <div class="mb-3">
-                                <label for="tanggal_pengerjaan" class="form-label">Tanggal Pengerjaan</label>
-                                <input type="date" class="form-control" id="tanggal_pengerjaan" name="tanggal_pengerjaan"
+                                <label for="tanggal_pengerjaan" class="form-label">Dikerjakan tanggal / Tanggal Untuk
+                                    Survei</label>
+                                <input type="date" class="form-control" id="tanggal_survei" name="tanggal_survei"
                                     required>
                             </div>
 
                             <div class="mb-3">
-                                <label for="waktu_pengerjaan" class="form-label">Waktu Pengerjaan</label>
-                                <input type="text" class="form-control" id="waktu_pengerjaan" name="waktu_pengerjaan"
+                                <label for="waktu_pengerjaan" class="form-label">Tanggal Selesai</label>
+                                <input type="date" class="form-control" id="tanggal_selesai" name="tanggal_selesai"
                                     placeholder="Masukkan waktu pengerjaan" required>
                             </div>
 
@@ -122,11 +124,16 @@
                                 </select>
                             </div>
 
-                            <!-- Input Nominal DP -->
+                            <!-- Input Nominal DP (disembunyikan secara default) -->
                             <div class="mb-3" id="nominalDPField" style="display: none;">
-                                <label for="nominal_dp" class="form-label">Nominal DP</label>
-                                <input type="text" class="form-control" id="nominal_dp" name="nominal_dp"
+                                <label for="nominal_dp_display" class="form-label">Nominal DP</label>
+
+                                <!-- Input untuk tampilan (diformat sebagai rupiah) -->
+                                <input type="text" class="form-control" id="nominal_dp_display"
                                     placeholder="Masukkan nominal DP">
+
+                                <!-- Input tersembunyi untuk dikirim ke backend -->
+                                <input type="hidden" id="nominal_dp" name="nominal_dp">
                             </div>
 
                             <!-- Input Request Bunga -->
@@ -153,8 +160,10 @@
                             <div class="mb-3">
                                 <label for="Budget" class="form-label">Budget</label>
                                 <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
                                     <input type="text" class="form-control" id="Budget" name="Budget"
-                                        placeholder="Masukkan Budget" oninput="formatCurrency(this)" required>
+                                        placeholder="Masukkan Budget yang sama dengan konsep bila sesuai dengan keinginan anda"
+                                        required>
                                 </div>
                             </div>
 
@@ -179,25 +188,6 @@
                                 document.getElementById('spesifikasi_lahan').value = lahan;
                             }
                         </script>
-
-                        <script>
-                            // Format Budget field as currency (Rp) when typing
-                            const budgetField = document.getElementById('Budget');
-
-                            budgetField.addEventListener('input', function(e) {
-                                let value = e.target.value.replace(/\D/g, ''); // Remove all non-numeric characters
-                                value = value.replace(/(\d)(\d{3})$/, '$1.$2'); // Add thousand separator
-                                e.target.value = 'Rp ' + value; // Prepend 'Rp' symbol
-                            });
-
-                            // Remove 'Rp' symbol before submitting the form to store only numbers
-                            document.querySelector('form').addEventListener('submit', function() {
-                                const budgetValue = document.getElementById('Budget').value;
-                                document.getElementById('Budget').value = budgetValue.replace(/[^\d]/g, ''); // Remove 'Rp' symbol
-                            });
-                        </script>
-
-
                     </div>
 
                 </div>
@@ -205,7 +195,64 @@
         </section>
 
     </main>
+    <script>
+        const displayInput = document.getElementById('nominal_dp_display');
+        const hiddenInput = document.getElementById('nominal_dp');
+
+        // Format angka jadi rupiah
+        function formatRupiah(angka) {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0
+            }).format(angka);
+        }
+
+        displayInput.addEventListener('input', function() {
+            let rawValue = this.value.replace(/\D/g, ''); // Hapus semua karakter selain angka
+
+            // Update hidden input (untuk disimpan)
+            hiddenInput.value = rawValue;
+
+            // Tampilkan kembali dalam format Rupiah
+            if (rawValue) {
+                this.value = formatRupiah(rawValue);
+            } else {
+                this.value = '';
+            }
+        });
+
+        function toggleNominalDP(select) {
+            const nominalField = document.getElementById('nominalDPField');
+            if (select.value === 'dp') {
+                nominalField.style.display = 'block';
+            } else {
+                nominalField.style.display = 'none';
+            }
+        }
+
+        const budgetInput = document.getElementById('Budget');
+
+        // Format Rupiah saat diketik
+        budgetInput.addEventListener('input', function(e) {
+            let value = this.value.replace(/\D/g, ''); // Hapus semua non-digit
+            this.value = formatRupiah(value);
+        });
+
+        // Format fungsi
+        function formatRupiah(angka) {
+            return angka.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        }
+
+        // Sebelum form disubmit, hapus format dan kirim angka saja
+        const form = budgetInput.closest('form');
+        form.addEventListener('submit', function() {
+            const cleanValue = budgetInput.value.replace(/\./g, ''); // Hapus titik
+            budgetInput.value = cleanValue; // Simpan hanya angka ke database
+        });
+    </script>
 @endsection
+
 <style>
     .card-text {
         font-size: 16px;

@@ -71,4 +71,32 @@ class UserController extends Controller
         $pelanggans = pelanggan::where('id_user', auth()->user()->id)->get();
         return view('user.form.tambahpesan', compact('pelanggans'));
     }
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'tanggal_survei' => 'required|date',
+            'tanggal_selesai' => 'required|date',
+            'alamat' => 'required|string|max:255',
+            'telepon' => 'required|string|max:20',
+        ]);
+
+        // Ambil pesanan
+        $pesanan = Pesanan::findOrFail($id);
+
+        // Update data tanggal di tabel pesanan
+        $pesanan->update([
+            'tanggal_survei' => $request->tanggal_survei,
+            'tanggal_selesai' => $request->tanggal_selesai,
+        ]);
+
+        // Ambil pelanggan terkait dan update alamat & telepon
+        if ($pesanan->pelanggan) {
+            $pesanan->pelanggan->update([
+                'alamat' => $request->alamat,
+                'telepon' => $request->telepon,
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Pesanan berhasil diperbarui.');
+    }
 }

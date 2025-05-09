@@ -30,48 +30,7 @@
     <link href="{{ asset('assetsuser/css/style.css') }}" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    <style>
-        .navbar .getstarted,
-        .navbar .getstarted:focus {
-            padding: 8px 20px;
-            margin-left: 30px;
-            border-radius: 50px;
-            color: #fff;
-            font-size: 14px;
-            border: 2px solid #47b2e4;
-            font-weight: 600;
-        }
-
-        .navbar .getstarted:hover,
-        .navbar .getstarted:focus:hover {
-            color: #fff;
-            background: green;
-        }
-
-        .progress-wrapper {
-            margin-bottom: 20px;
-        }
-
-        .progress {
-            height: 8px;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        .progress-animated {
-            animation: progressFill 1.5s ease-in-out;
-        }
-
-        @keyframes progressFill {
-            from {
-                width: 0%;
-            }
-
-            to {
-                width: 100%;
-            }
-        }
-    </style>
+   
 </head>
 
 <body>

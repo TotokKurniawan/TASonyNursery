@@ -20,13 +20,13 @@ class pesanan extends Model
         'foto_lokasi',
         'foto_desain',
         'metode_pembayaran',
-        'waktu_pengerjaan',
-        'tanggal_pengerjaan',
+        'tanggal_selesai',
+        'tanggal_survei',
         'keterangan_tambahan',
-        'keterangan_banding',
         'keterangan_tolak',
         'status_pembayaran',
         'nominal_dp',
+        'bukti_dp',
         'id_pelanggan',
         'id_desain',
     ];
@@ -37,5 +37,9 @@ class pesanan extends Model
     public function desain()
     {
         return $this->belongsTo(desain::class, 'id_desain', 'id');
+    }
+    public function negosiasi()
+    {
+        return $this->hasMany(Negosiasi::class, 'id_pesanan');
     }
 }

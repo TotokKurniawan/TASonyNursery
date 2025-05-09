@@ -7,6 +7,7 @@ use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\LoginController;
+use App\Http\Controllers\NegosiasiController;
 use App\Http\Controllers\PelangganAdminController;
 use App\Http\Controllers\PembayaranController;
 use App\Http\Controllers\PengeluaranAdminController;
@@ -63,9 +64,12 @@ Route::delete('/Pelanggan/{pelanggan}', [PelangganAdminController::class, 'delet
 Route::get('/Pesanan', [PesananAdminController::class, 'pesanan'])->name('pesanan');
 Route::patch('/admin/tolak/{id}', action: [PesananAdminController::class, 'tolakadmin'])->name('tolakadmin');
 Route::patch('/admin/terima/{id}', [PesananAdminController::class, 'terimaadmin'])->name('terimaadmin');
+Route::patch('/admin/terimalunas/{id}', [PesananAdminController::class, 'terimalunas'])->name('terimalunas');
+Route::patch('/admin/lanjut/{id}', [PesananAdminController::class, 'lanjutadmin'])->name(name: 'lanjutadmin');
+
 Route::patch('/admin/selesai/{id}', [PesananAdminController::class, 'selesaiadmin'])->name(name: 'selesaiadmin');
-Route::patch('/pesanan/{id}/negosiasi', [PesananAdminController::class, 'negosiasi'])->name('pesanan.negosiasi');
 Route::patch('/pesanan/{id}', [PesananAdminController::class, 'update'])->name('pesanan.update');
+Route::patch('/pesananuser/{id}', [UserController::class, 'update'])->name('pesanan.update');
 
 
 Route::patch('/pesanan/metode-pembayaran/{id}', [PesananAdminController::class, 'updateMetodePembayaran'])->name('updateMetodePembayaran');
@@ -112,3 +116,9 @@ Route::get('/lanjutpesan2', function (\Illuminate\Http\Request $request) {
     $id_pelanggan = $request->input('id_pelanggan');
     return redirect()->route('pesan4', ['id_pelanggan' => $id_pelanggan]);
 })->name('lanjut.pesan2');
+
+
+
+Route::post('/negosiasi', [NegosiasiController::class, 'store'])->name('negosiasi.store');
+Route::post('/user/negosiasi/kirim', [NegosiasiController::class, 'kirimUser'])->name('user.negosiasi.kirim');
+Route::post('/upload-bukti/{pesananId}', [PaymentController::class, 'uploadBukti'])->name('upload.bukti');
